@@ -151,7 +151,12 @@ Analysis::Analysis(G4ParticleGun *particle_gun)
 			data_file_name = (std::string)rootoutputfile.substr(0, rootoutputfile.find(".root"));
 			data_file_name += ".dat";
 		}
-		else
+		else if (rootoutputfile.find(".dat") < rootoutputfile.length())
+		{
+			data_file_name = (std::string)rootoutputfile.substr(0, rootoutputfile.find(".dat")); //redundant, but just in case the user specified a .dat file, we will remove the .dat and add it back again
+			data_file_name += ".dat";
+		}
+		else //if the user specified a file name without any extension, we will add .dat to it
 			data_file_name = (std::string)RootOutputFile + ".dat";
 
 		data_file.open(data_file_name.c_str(), std::ofstream::out | std::ofstream::trunc); // open the text file
@@ -434,8 +439,7 @@ void Analysis::ClassifyNewTrack(
 	{
 		const G4double LambdaE = 2.0 * 3.14159265358979323846 * 1.973269602e-16 * m * GeV;
 
-		Double_t aWaveLength = 0.0;										// will be in [nanometer]
-		aWaveLength = (LambdaE / aTrack->GetTotalEnergy()) / nanometer; // in [nanometer]
+		Double_t aWaveLength = (LambdaE / aTrack->GetTotalEnergy()) / nanometer; // in [nanometer]
 																		// aWaveLength = (LambdaE / aTrack->GetKineticEnergy()) / nanometer; // in [nanometer]
 																		//      if (hOPWaveLength) hOPWaveLength->Fill(aWaveLength, aTrack->GetWeight()); // Wavelength of the produced optical photon
 	}
@@ -649,7 +653,7 @@ bool Analysis::TrackMustDie(const G4Step *aStep)
 }
 bool Analysis::EnteringDetector(const G4Step *aStep) // check if we are entering the detector for the first time
 {
-	long unsigned int trackid = aStep->GetTrack()->GetTrackID();
+//	long unsigned int trackid = aStep->GetTrack()->GetTrackID();
 
 	if (aStep->GetPostStepPoint()->GetPhysicalVolume()->GetName().compare(0, 8, "det_phys") == 0 &&
 		aStep->GetPreStepPoint()->GetPhysicalVolume()->GetName().compare(0, 8, "det_phys") != 0) // modified the code so it checks the detector entrance by comparing the Pre!=detector && Post==detector

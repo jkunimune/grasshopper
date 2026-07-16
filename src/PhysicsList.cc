@@ -110,7 +110,7 @@ void physicsList::ConstructPhysics()
   //////////////////////
   // Hadronic Physics //
   //////////////////////
-  bool useNeutronHP = true;
+  bool useNeutronHP = false;
   bool useScintillation = false;
 
   // QGSP model with the Binary Ion Cascase (BIC) with high precision
@@ -120,10 +120,9 @@ void physicsList::ConstructPhysics()
 //    RegisterPhysics( new G4HadronPhysicsINCLXX(verboseLevel)); //better for spallation.   This and the lower line conflict
     RegisterPhysics( new G4HadronPhysicsQGSP_BIC_HP(verboseLevel)); //this is more accurate for low energy interractions
     RegisterPhysics( new G4HadronElasticPhysicsHP(verboseLevel) );
+    // QGSP model with BIC, standard hadron elastic physics, and the
+    // extended neutron XS data set for improved non-HP neutron physics
   }
-  
-  // QGSP model with BIC, standard hadron elastic physics, and the
-  // extended neutron XS data set for improved non-HP neutron physics
   else{
 //    RegisterPhysics( new G4HadronPhysicsINCLXX(verboseLevel)); //better for spallation. This and the lower line conflict
 //    RegisterPhysics( new G4HadronPhysicsQGSP_BIC(verboseLevel)); //this is more accurate for low energy interractions
