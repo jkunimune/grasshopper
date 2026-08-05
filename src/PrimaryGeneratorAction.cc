@@ -202,21 +202,22 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
   }
   particleGun->SetParticleEnergy(energy);
 
-  G4double r, ph;
+  G4double r;
   G4double x_r, y_r, z_r;
 
   if (omnidirectional){
     r = worldRadius; // WORLD RADIUS
     
-    ph = 360.*G4UniformRand()*CLHEP::deg;
-    G4double u = 2*G4UniformRand()-1;
-    x_r = r*sqrt(1 - u*u)*cos(ph);
-    y_r = r*sqrt(1 - u*u)*sin(ph);
-    z_r = r*u;
+    G4double ph = 360.*G4UniformRand()*CLHEP::deg;
+    G4double cos_th = 2*G4UniformRand()-1;
+    G4double sin_th = sqrt(1 - cos_th*cos_th);
+    x_r = r*sin_th*cos(ph);
+    y_r = r*sin_th*sin(ph);
+    z_r = r*cos_th;
   }
   else{
     r = beam_size*sqrt(G4UniformRand());
-    ph = 360.*G4UniformRand()*CLHEP::deg;
+    G4double ph = 360.*G4UniformRand()*CLHEP::deg;
 
     x_r = r*cos(ph);
     y_r = r*sin(ph);
@@ -225,24 +226,24 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
   
   particleGun->SetParticlePosition(G4ThreeVector(x_r+beam_offset_x,y_r+beam_offset_y,z_r+z0));
   
-  G4double theta;
-  G4double phi;
   G4ThreeVector vDir;
   
   if(fan_beam){ // let's do a fan beam
-    theta = asin(2*G4UniformRand()-1);
-    phi   = 0.005*(G4UniformRand()-0.5);
-    vDir  = G4ThreeVector(sin(theta),cos(theta)*sin(phi),cos(theta)*cos(phi));
+    G4double sin_theta = 2*G4UniformRand()-1;
+    G4double cos_theta = sqrt(1-sin_theta*sin_theta);
+    G4double lambda    = 0.005*(G4UniformRand()-0.5);
+    vDir = G4ThreeVector(sin_theta,cos_theta*sin(lambda),cos_theta*cos(lambda));
   }
   else if(isotropic_beam || isotropic_extended){ // isotropic
-    theta = acos(2*G4UniformRand()-1);
-    phi   = 360.*G4UniformRand()*CLHEP::deg;
-    vDir  = G4ThreeVector(sin(theta)*cos(phi),sin(theta)*sin(phi),cos(theta));
+    G4double cos_theta = 2*G4UniformRand()-1;
+    G4double sin_theta = sqrt(1-cos_theta*cos_theta);
+    G4double phi       = 360.*G4UniformRand()*CLHEP::deg;
+    vDir = G4ThreeVector(sin_theta*cos(phi),sin_theta*sin(phi),cos_theta);
   }
   else if (omnidirectional){
-    theta = 180.*CLHEP::deg - 0.5*acos(1-2*G4UniformRand());
-    phi   = 360.*G4UniformRand()*CLHEP::deg;
-    vDir  = G4ThreeVector(sin(theta)*cos(phi),sin(theta)*sin(phi),cos(theta));
+    G4double theta = 180.*CLHEP::deg - 0.5*acos(1-2*G4UniformRand());
+    G4double phi   = 360.*G4UniformRand()*CLHEP::deg;
+    vDir = G4ThreeVector(sin(theta)*cos(phi),sin(theta)*sin(phi),cos(theta));
     vDir.rotate(acos(z_r / r), G4ThreeVector(-y_r, x_r, 0));
   }
   else{
