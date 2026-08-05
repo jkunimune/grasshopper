@@ -298,7 +298,7 @@ void Analysis::EndOfEventAction(const G4Event *anEvent)
 		IsSurfaceHitTrack = IsSurfaceHit.at(i);
 		channel = detector_hit.at(i);
 
-		if (detector_hit.at(i) >= 0 && ((IsSurfaceHitTrack && SaveSurfaceHitTrack) || SaveTrackInfo))
+		if (channel >= 0 && ((IsSurfaceHitTrack && SaveSurfaceHitTrack) || SaveTrackInfo))
 		{ // filter out the empty stuff
 			if (textoutput)
 			{
@@ -313,7 +313,7 @@ void Analysis::EndOfEventAction(const G4Event *anEvent)
 							  << "\t" << ParticleName.c_str()
 							  << "\t" << CreatorProcessName.c_str()
 							  << "\t" << Time
-							  << "\t" << detector_hit.at(i)
+							  << "\t" << channel
 							  << std::endl;
 				}
 				else
@@ -334,7 +334,7 @@ void Analysis::EndOfEventAction(const G4Event *anEvent)
 							  << "\t" << CreatorProcessName.c_str()
 							  << "\t" << 0
 							  << "\t" << IsSurfaceHitTrack
-							  << "\t" << detector_hit.at(i)
+							  << "\t" << channel
 							  << std::endl;
 				}
 			}
@@ -349,17 +349,20 @@ void Analysis::EndOfEventAction(const G4Event *anEvent)
 	{
 		IsSummaryEntry = true;
 		IsSurfaceHitTrack = false;
-		Edep = 0; // set it to zero
+		std::map<long, G4double> Edep_sums; // set it to zero for all channels
 		CreatorProcessName = "";
 		for (unsigned int i = 0; i < Ev.size(); ++i)
-		{																			// add ALL the deposited energies from ALL the tracks that hit the detector
-			if (detector_hit.at(i) >= 0 &&											// make sure we are inside the detector
+		{
+			channel = detector_hit.at(i);													// add ALL the deposited energies from ALL the tracks that hit the detector
+			if (channel >= 0 &&											// make sure we are inside the detector
 				(IDv.at(i) == LightProducingParticle ||								// this is the designated light producing particle, OR
 				 LightProducingParticle == 0 ||										// the light producing particle has been set to 0 (i.e. everything), OR
 				 (LightProducingParticle == 2212 && ProcessNamev.at(i) == "hIoni")) // this is an hadron ionization track from a proton
 			)
 			{
-				Edep += Edepv.at(i);
+				if (!Edep_sums.count(channel))
+					Edep_sums[channel] = 0;
+				Edep_sums[channel] += Edepv.at(i);
 				CreatorProcessName += ProcessNamev.at(i) + "/";
 			}
 		}
@@ -367,8 +370,10 @@ void Analysis::EndOfEventAction(const G4Event *anEvent)
 		if (gSystem)
 			gSystem->ProcessEvents();
 #endif /* defined (G4ANALYSIS_USE_ROOT) */
-		if (Edep > 0)
+		for (auto item: Edep_sums)
 		{
+			channel = item.first;
+			G4double Edep_sum = item.second;
 
 			if (textoutput)
 			{
@@ -387,7 +392,7 @@ void Analysis::EndOfEventAction(const G4Event *anEvent)
 					data_file << std::setprecision(5);
 					data_file << E_beam << "\t"
 							  << -1
-							  << "\t" << Edep
+							  << "\t" << Edep_sum
 							  << "\t" << -1
 							  << "\t" << -1
 							  << "\t" << -1
@@ -400,6 +405,7 @@ void Analysis::EndOfEventAction(const G4Event *anEvent)
 							  << "\t" << CreatorProcessName.c_str()
 							  << "\t" << 1
 							  << "\t" << 0
+							  << "\t" << channel
 							  << std::endl;
 				}
 			}
