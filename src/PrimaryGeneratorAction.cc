@@ -35,13 +35,12 @@ PrimaryGeneratorAction::PrimaryGeneratorAction()
 
   int  particleNumber=parser.GetConstant("ParticleNumber");
   particlePDG = particleNumber;
-  //  particle = particleTable->FindParticle(particleName="e-");
+  // particle = particleTable->FindParticle(particleName="e-");
   // For ion PDG codes (e.g. alpha = 1000020040), FindParticle returns nullptr
   // at construction time because Geant4's ion table is not populated until
   // after the physics list is initialized. Defer the lookup to GeneratePrimaries
   // in that case.
   G4ParticleDefinition *particle = particleTable->FindParticle(particleNumber);
-  //  particle = particleTable->FindParticle(particleName="geantino");
   if (particle) {
     particleGun->SetParticleDefinition(particle);
   }
@@ -52,8 +51,8 @@ PrimaryGeneratorAction::PrimaryGeneratorAction()
   }
 
   energy = parser.GetQuantity("BeamEnergy");
-  if(energy<0){
-	  doing_continuous_spectrum=true;
+  if(energy<0) {
+    doing_continuous_spectrum=true;
     if (energy/CLHEP::MeV == -3) {
       interpolate=0;
       inter2ndOrder=0;
@@ -64,7 +63,7 @@ PrimaryGeneratorAction::PrimaryGeneratorAction()
       interpolate=1;
       inter2ndOrder=0;
     }
-	  ReadInputSpectrumFile("input_spectrum.txt");
+    ReadInputSpectrumFile("input_spectrum.txt");
   }
   else doing_continuous_spectrum=false;
 
@@ -72,23 +71,23 @@ PrimaryGeneratorAction::PrimaryGeneratorAction()
   beam_offset_x = parser.GetQuantity("BeamOffsetX");
   beam_offset_y = parser.GetQuantity("BeamOffsetY");
   beam_size = parser.GetQuantity("BeamSize");
-  source_width=0; //by default the width along Z is zero
+  source_width = 0; // by default the width along Z is zero
 
-  if(beam_size/CLHEP::mm == -1){ //the user wants to do a fan beam
-	  beam_size=0;
-	  fan_beam=true;
-	  isotropic_beam=false;
-	  isotropic_extended=false;
+  if(beam_size/CLHEP::mm == -1) { // the user wants to do a fan beam
+    beam_size=0;
+    fan_beam=true;
+    isotropic_beam=false;
+    isotropic_extended=false;
     omnidirectional=false;
   }
-  else if(beam_size/CLHEP::mm == -2){ // the user wants an isotropic source
+  else if(beam_size/CLHEP::mm == -2) { // the user wants an isotropic source
     beam_size=0;
     isotropic_beam=true;
     fan_beam=false;
     isotropic_extended=false;
     omnidirectional=false;
   }
-  else if(beam_size/CLHEP::mm == -3){ // the user wants an omnidirectional background source
+  else if(beam_size/CLHEP::mm == -3) { // the user wants an omnidirectional background source
     /*
      During analysis, correct for world volume and number of Monte Carlo particles:
      phi = background flux (counts per unit area per unit time)
@@ -129,7 +128,7 @@ PrimaryGeneratorAction::PrimaryGeneratorAction()
       }
     }
     else {
-    	source_width=0; //zero, as before
+    	source_width=0; // zero, as before
     }
     f.close();
 
@@ -176,9 +175,9 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
 
 
   // set particle kinetic energy to the gun
-  if(doing_continuous_spectrum){//sample from dNde <- this gets called only if energy<0 in input.  Otherwise this gets skipped
+  if(doing_continuous_spectrum){ // sample from dNde <- this gets called only if energy<0 in input.  Otherwise this gets skipped
     double random=G4UniformRand()*N[N.size()-1];
-    //determine which value of energy this corresponds to.
+    // determine which value of energy this corresponds to.
     for(unsigned int i=0;i<N.size();i++) {
       if(N[i]>random) {
         if (interpolate) {
@@ -211,12 +210,11 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
     
     ph = 360.*G4UniformRand()*CLHEP::deg;
     G4double u = 2*G4UniformRand()-1;
-    x_r = r*pow((1 - u*u), 0.5)*cos(ph);
-    y_r = r*pow((1 - u*u), 0.5)*sin(ph);
+    x_r = r*sqrt(1 - u*u)*cos(ph);
+    y_r = r*sqrt(1 - u*u)*sin(ph);
     z_r = r*u;
   }
   else{
-//    r = beam_size*acos(G4UniformRand())/pi*2.;
     r = beam_size*sqrt(G4UniformRand());
     ph = 360.*G4UniformRand()*CLHEP::deg;
 
@@ -231,27 +229,24 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
   G4double phi;
   G4ThreeVector vDir;
   
-  if(fan_beam){ //let's do a fan beam
-	  theta = acos(0.5*(G4UniformRand()-0.5))-90.*CLHEP::deg;
-	  phi   = 0.005*(G4UniformRand()-0.5);
-    vDir = G4ThreeVector(sin(theta)*cos(phi),sin(theta)*sin(phi),cos(theta));
+  if(fan_beam){ // let's do a fan beam
+    theta = asin(2*G4UniformRand()-1);
+    phi   = 0.005*(G4UniformRand()-0.5);
+    vDir  = G4ThreeVector(sin(theta),cos(theta)*sin(phi),cos(theta)*cos(phi));
   }
-  else if(isotropic_beam || isotropic_extended){ //isotropic
-    theta = acos(2*G4UniformRand()-1); //truly isotropic
-    //	  theta = acos(0.05*G4UniformRand()+0.95);
-	  phi   = 2*acos(-1)*G4UniformRand();
-    vDir = G4ThreeVector(sin(theta)*cos(phi),sin(theta)*sin(phi),cos(theta));
+  else if(isotropic_beam || isotropic_extended){ // isotropic
+    theta = acos(2*G4UniformRand()-1);
+    phi   = 360.*G4UniformRand()*CLHEP::deg;
+    vDir  = G4ThreeVector(sin(theta)*cos(phi),sin(theta)*sin(phi),cos(theta));
   }
   else if (omnidirectional){
-    theta = acos(-pow(1 - G4UniformRand(), 0.5));
-    phi   = 2*acos(-1)*G4UniformRand();
-    vDir = G4ThreeVector(sin(theta)*cos(phi),sin(theta)*sin(phi),cos(theta));
-    vDir.rotate(acos(z_r / r), G4ThreeVector(-(y_r+beam_offset_y), x_r+beam_offset_x, 0));
+    theta = 180.*CLHEP::deg - 0.5*acos(1-2*G4UniformRand());
+    phi   = 360.*G4UniformRand()*CLHEP::deg;
+    vDir  = G4ThreeVector(sin(theta)*cos(phi),sin(theta)*sin(phi),cos(theta));
+    vDir.rotate(acos(z_r / r), G4ThreeVector(-y_r, x_r, 0));
   }
   else{
-	  theta = 0.*CLHEP::deg;
-	  phi = 0.*CLHEP::deg;
-    vDir = G4ThreeVector(sin(theta)*cos(phi),sin(theta)*sin(phi),cos(theta));
+    vDir = G4ThreeVector(0.,0.,1.);
   }
   
   particleGun->SetParticleMomentumDirection(vDir);
@@ -260,9 +255,9 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
    
 }
 void PrimaryGeneratorAction::ReadInputSpectrumFile(std::string filename){
-// This method, if a negative energy is specified for the particle,
-	// opens and reads the default input spectrum file (asci txt)
-	// To be implemented.
+  // This method, if a negative energy is specified for the particle,
+  // opens and reads the default input spectrum file (asci txt)
+  // To be implemented.
 
   std::ifstream f(filename);
   if(f.is_open()) { //check that the file is open
