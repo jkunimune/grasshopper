@@ -217,7 +217,7 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
   }
   else{
     r = beam_size*sqrt(G4UniformRand());
-    ph = 360.*G4UniformRand()*CLHEP::deg;
+    G4double ph = 360.*G4UniformRand()*CLHEP::deg;
 
     x_r = r*cos(ph);
     y_r = r*sin(ph);
@@ -232,11 +232,11 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
     G4double sin_theta = 2*G4UniformRand()-1;
     G4double cos_theta = sqrt(1-sin_theta*sin_theta);
     G4double lambda    = 0.005*(G4UniformRand()-0.5);
-    vDir = G4ThreeVector(sin_th,cos_theta*sin(lambda),cos_theta*cos(lambda));
+    vDir = G4ThreeVector(sin_theta,cos_theta*sin(lambda),cos_theta*cos(lambda));
   }
   else if(isotropic_beam || isotropic_extended){ // isotropic
     G4double cos_theta = 2*G4UniformRand()-1;
-    G4double sin_theta = sqrt(1-cos_theta*cos_theta)
+    G4double sin_theta = sqrt(1-cos_theta*cos_theta);
     G4double phi       = 360.*G4UniformRand()*CLHEP::deg;
     vDir = G4ThreeVector(sin_theta*cos(phi),sin_theta*sin(phi),cos_theta);
   }
