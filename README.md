@@ -21,48 +21,111 @@ For copyright and licensing see files COPYRIGHT and LICENSE.
 To install
 ==
 
-The user is required/advised to have the following:
-	
-* xerces.  This will allow the GDML parser capability.
-* Built and installed geant4 libraries.  
-	* In the cmake configuration stage, the following flag needs to be passed: `-DGEANT4_USE_GDML=ON`.  
-	* Here's an example of what a Geant4 cmake command looks like(to be ran from `geant_build`): `cmake -DGEANT4_USE_GDML=ON -DGEANT4_INSTALL_DATA=ON -DCMAKE_INSTALL_PREFIX=../geant4-v11.4.2-install ../geant4-v11.4.2 `
-* ROOT -- optional.  Has been tested with version 6.32.12.  If you do not have ROOT the make process will recognize that and exclude it from the build.
+### Using CMake
+First of all, if you haven't used CMake, you need to use it thrice here, so here's a brief summary of how it works.
+In the year 2000, computer programmers had invented the computer program but hadn't yet invented computer programs that do multiple things.
+So instead of shipping software with a script to install the software like modern Python libraries, they shipped it with a bunch of folders full of files that you install in three separate steps using two separate build tools.
 
-__Geant4 compatibility__:  most recently, grasshopper and been built against and tested with Geant4 versions 11.2.2, 11.3.2, and **11.4.2**.
-
-__Important note__:  these days geant4 primarily works via the cmake framework.  However grasshopper can also use the older Makefile framework.  It is important that you source the appropriate shell script in geant4 directories to enable all the env. variables that are necessary for Makefile to work correctly.  In my particular case I have the following line in my .bashrc file, please modify this accordingly for your build/configuration:
-
-`. ~/geant4/geant4-v11.3.2-install/share/Geant4/geant4make/geant4make.sh `
-
-If all the regular geant4 installations and configurations are ready, then the user can get the code by
-
-`git clone https://github.com/ustajan/grasshopper.git`
-
-To build with GNUmake
-==
+First, you create a "build" directory in which you'll dump all of the data that needs to be passed between the build tools.
+```bash
+mkdir myprogram-build
 ```
-cd grasshopper
-make -jN
+Then you run CMake to configure the source code into the build directory, and pass most of your compilation options using the `-D` flag.
+One of the more important compilation options is `CMAKE_INSTALL_PREFIX` which is the folder where you want to put the built binaries and libraries.
+If you leave it blank it'll put them somewhere high up in your file system where they're hidden away and presumably on your paths,
+but then you'll need to use `sudo` when you install.  If you don't have super-user rights, you'll have to specify a different directory to which you have write access.
+The locations of dependencies are also often compilation options.
+```bash
+cd myprogram-build
+cmake -D OPTION=ON -D ANOTHER_OPTION=OFF -D CMAKE_INSTALL_PREFIX=~/myprogram-install ~/myprogram-src
 ```
-where N is the number of your cores.  
-To run, do   
-`grasshopper input.gdml output.root`   
-for example:  
-`grasshopper exec/Examples/beta/beta_lite.gdml test.root`
-
-To build with CMake
-==
+Then you run regular Make to build the binaries and libraries.
+```bash
+make
 ```
-cd grasshopper
-mkdir RunGrasshopper && cd RunGrasshopper
-cmake .. && make -jN
+Then you run regular Make in "install" mode to move the binaries and libraries from wherever it put them into the correct folder.
+```bash
+make install
 ```
-where N is the number of your cores.  This will locally generate a binary, `grasshopper`, which you can then run something like the following:
 
-`./grasshopper ../exec/Examples/beta/beta_lite.gdml test.root`
+If either of the Make steps gets interrupted or you make a mistake and have to start over, make sure to call Make in "clean" mode to make it clean up after its mistakes.
+```bash
+make clean
+```
 
+### Installing Xerces
 
+First, you need Apache Xerces, an XML parser, which is a prerequisite for Geant4 with GDML, which is a prerequisite for Grasshopper.
+This one doesn't require any CMake arguments other than maybe an install directory.
+
+```bash
+mkdir ~/xerces-build
+cd ~/xerces-build
+cmake -D CMAKE_INSTALL_PREFIX=~/xerces-install ~/xerces-build
+make
+make install
+```
+
+After it's installed, if you changed the install directory, you need to add the install's library subdirectory to your library path.
+```bash
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:~/xerces-install/lib64
+```
+Note that sometimes the library subdirectory is `lib/` and sometimes it's `lib64/`.
+I don't know what determines when it's which; you just have to look inside the installation and check the name of the folder that contains the shared object files.
+
+### Installing Geant4
+
+Now you need to install Geant4.  For this, you'll need Expat.  IDK what Expat is, but most systems have it already installed so you probably don't have to worry about installing it.
+But if you're on the Engaging cluster you need to load it as a module, and it's hidden.  So first you have to search for it with
+```bash
+module --show_hidden spider expat
+```
+and then you have to load one of the available versions that comes up.
+If you have issues, an alternative approach is to configure Geant4 to use its internal copy of Expat with `-D GEANT4_USE_SYSTEM_EXPAT=OFF`
+
+Then you can move on to Geant4 itself.  Download the source, then configure it with CMake, then build it with Make, then install it with Make.
+There are many CMake options for Geant4, but the important ones are:
+* `GEANT4_USE_GDML` which Grasshopper requires be set to `ON`
+* `GEANT4_INSTALL_DATA` which must be set to `ON` but is off by default for some reason
+* `GEANT4_BUILD_MULTITHREADED` which you presumably want `ON`, especially if you're building on a cluster
+* `CMAKE_PREFIX_PATH` which must point to Xerces if Xerces wasn't installed in the default place
+
+The build step takes a while here, so you might want to move it into a Slurm partition if you're on a shared computing cluster.
+
+```bash
+mkdir ~/geant4-build
+cd ~/geant4-build
+cmake -D GEANT4_USE_GDML=ON -D GEANT4_INSTALL_DATA=ON -D GEANT4_BUILD_MULTITHREADED=ON -D CMAKE_PREFIX_PATH=~/xerces-install -D CMAKE_INSTALL_PREFIX=~/geant4-install ~/geant4-src
+sbatch --time=2:00:00 --wrap="make && make install"
+```
+
+After it's installed, if you changed the install directory, you need to add the install's library subdirectory to your library path.
+```bash
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:~/geant4-install/lib64
+```
+Note that sometimes the library subdirectory is `lib/` and sometimes it's `lib64/`.
+I don't know what determines when it's which; you just have to look inside the installation and check the name of the folder that contains the shared object files.
+
+### Installing Grasshopper
+
+Finally, Grasshopper.  Download the source, then configure it with CMake, then build it with Make, then install it with Make.
+The only CMake option you need is `DGeant4_DIR` which should point to the `lib/cmake/Geant4/` subfolder of the Geant4 installation,
+if Geant4 wasn't installed in the default place.
+
+```bash
+mkdir ~/grasshopper-build
+cd ~/grasshopper-build
+cmake -D Geant4_DIR=~/geant4-install/lib/cmake/Geant4 -D CMAKE_INSTALL_PREFIX=~/grasshopper-install ~/grasshopper-src
+make
+make install
+```
+
+After it's installed, you need to manually add the Grasshopper executable to your path.  For example:
+```bash
+export PATH=$PATH:~/grasshopper-install/bin
+```
+
+Once this is done, you can remove all of the build directories, plus all of the source code directories if you don't plan to make changes.
 
 
 Python GUI frontend
