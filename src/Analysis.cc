@@ -154,7 +154,18 @@ Analysis::Analysis(G4ParticleGun *particle_gun)
 		else if (rootoutputfile.find(".dat") < rootoutputfile.length())
 		{
 			data_file_name = (std::string)rootoutputfile.substr(0, rootoutputfile.find(".dat")); //redundant, but just in case the user specified a .dat file, we will remove the .dat and add it back again
+#if defined(G4ANALYSIS_USE_ROOT)
+			// The ROOT TFile above was opened on RootOutputFile verbatim (i.e. "*.dat"),
+			// so writing the ASCII output to the same path would produce a hybrid file
+			// (ROOT binary header welded onto ASCII rows). Disambiguate by suffixing.
+			data_file_name += "_text.dat";
+			std::cout << "\nWARNING: output filename ends in .dat but ROOT support is enabled.\n"
+			             "         ROOT binary output -> " << RootOutputFile << "\n"
+			             "         ASCII output       -> " << data_file_name << "\n"
+			             "         (Pass a *.root filename to keep the ASCII name unchanged.)\n";
+#else
 			data_file_name += ".dat";
+#endif
 		}
 		else //if the user specified a file name without any extension, we will add .dat to it
 			data_file_name = (std::string)RootOutputFile + ".dat";
