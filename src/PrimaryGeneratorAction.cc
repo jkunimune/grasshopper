@@ -76,16 +76,10 @@ PrimaryGeneratorAction::PrimaryGeneratorAction()
   if(beam_size/CLHEP::mm == -1) { // the user wants to do a fan beam
     beam_size=0;
     fan_beam=true;
-    isotropic_beam=false;
-    isotropic_extended=false;
-    omnidirectional=false;
   }
   else if(beam_size/CLHEP::mm == -2) { // the user wants an isotropic source
     beam_size=0;
     isotropic_beam=true;
-    fan_beam=false;
-    isotropic_extended=false;
-    omnidirectional=false;
   }
   else if(beam_size/CLHEP::mm == -3) { // the user wants an omnidirectional background source
     /*
@@ -99,10 +93,7 @@ PrimaryGeneratorAction::PrimaryGeneratorAction()
      Measured Integrated Detector Flux (n/s) = Detected MC count * weight
      */
     beam_size=0;
-    isotropic_beam=false;
-    fan_beam=false;
     omnidirectional=true;
-    isotropic_extended=false;
     try {
       worldRadius = parser.GetQuantity("WorldRadius");
       std::cout << "Doing Omnidirectional Source with WorldRadius: " << worldRadius/CLHEP::mm << " mm" << std::endl;
@@ -114,10 +105,22 @@ PrimaryGeneratorAction::PrimaryGeneratorAction()
       exit(10);
     }
   }
-  else if(beam_size/CLHEP::mm < 0 ){ // any negative number other than -1, -2 --> the user wants an isotropic, extended source
+  else if(beam_size/CLHEP::mm == -4) { // the user wants a rectangular beam
+    beam_size=0;
+    rectangular_beam=true;
+    try {
+      source_dx = parser.GetQuantity("BeamWidth");
+      source_dy = parser.GetQuantity("BeamHeight");
+    } catch (...) {
+      G4cerr << "\nERROR: BeamWidth and/or BeamHeight is not defined in the GDML.\n"
+             << "  Please add them to the <define> section, e.g.:\n"
+             << "    <quantity name=\"BeamWidth\" type=\"length\" value=\"500\" unit=\"mm\"/>\n"
+             << G4endl;
+      exit(10);
+    }
+  }
+  else if(beam_size/CLHEP::mm < 0 ){ // any negative number other than -1, -2, -3, or -4 --> the user wants an isotropic, extended source
     beam_size= fabs(beam_size/(CLHEP::mm)); //actual spot size
-    isotropic_beam=false;
-    fan_beam=false;
     isotropic_extended=true;
     //now, check if there is a beam_width.txt file.  If so, set beam_width to the content
     //Eventually we should migrate this into the .gdml file too.
@@ -133,10 +136,8 @@ PrimaryGeneratorAction::PrimaryGeneratorAction()
     f.close();
 
   }
-  else{  // do a pencil beam
-    fan_beam=false;
-    isotropic_beam=false;  
-  }  
+  else { // do a cylindrical beam
+  }
 
 }
 
@@ -215,6 +216,11 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
     y_r = r*sin_th*sin(ph);
     z_r = r*cos_th;
   }
+  else if (rectangular_beam){
+    x_r = source_dx*(G4UniformRand()-0.5);
+    y_r = source_dy*(G4UniformRand()-0.5);
+    z_r = source_width*(G4UniformRand()-0.5);
+  }
   else{
     r = beam_size*sqrt(G4UniformRand());
     G4double ph = 360.*G4UniformRand()*CLHEP::deg;
@@ -258,7 +264,6 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
 void PrimaryGeneratorAction::ReadInputSpectrumFile(std::string filename){
   // This method, if a negative energy is specified for the particle,
   // opens and reads the default input spectrum file (asci txt)
-  // To be implemented.
 
   std::ifstream f(filename);
   if(f.is_open()) { //check that the file is open

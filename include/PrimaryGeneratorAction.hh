@@ -44,8 +44,10 @@ public:
   float energy = 0;
   bool doing_continuous_spectrum = false;
   bool interpolate = false, inter2ndOrder = false;
-  bool fan_beam = false, isotropic_beam = false, isotropic_extended = false, omnidirectional = false;
+  bool fan_beam = false, isotropic_beam = false, isotropic_extended = false, omnidirectional = false, rectangular_beam = false;
   G4double worldRadius = 0.0;
+  G4double source_dx = 0.0;
+  G4double source_dy = 0.0;
 
   std::vector<float> e,dNde,N; //the input from the file
 
