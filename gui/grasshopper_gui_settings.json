@@ -64,12 +64,15 @@
   "gdml_in": "omnidirectional.gdml",
   "root_out": "output.root",
   "run_seed": "",
-  "bins": "500",
-  "logy": false,
-  "filt1_col": "theta(rad)",
+  "bins": "100",
+  "logy": true,
+  "filt1_col": "",
   "filt1_min": "0",
   "filt1_max": "0.06",
-  "filt2_col": "E_incident(MeV)",
-  "filt2_min": "200",
-  "filt2_max": "2000"
+  "filt2_col": "E(MeV)",
+  "filt2_min": "0",
+  "filt2_max": "800",
+  "filt3_col": "ParticleName",
+  "filt3_min": "neutron",
+  "filt3_max": "neutron"
 }

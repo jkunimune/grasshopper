@@ -21,7 +21,7 @@
 #include "G4HadronPhysicsFTFP_BERT_HP.hh"
 
 #include "G4HadronPhysicsINCLXX.hh"
-
+#include "QGSP_INCLXX_HP.hh"
 
 #include "G4HadronElasticPhysics.hh"
 #include "G4HadronInelasticProcess.hh"
@@ -110,26 +110,33 @@ void physicsList::ConstructPhysics()
   //////////////////////
   // Hadronic Physics //
   //////////////////////
-  bool useNeutronHP = false;
+  bool useNeutronHP = true;
   bool useScintillation = false;
 
   // QGSP model with the Binary Ion Cascase (BIC) with high precision
   // neutron transport (HP). Note the required use of complementary of
   // HP version for hadron elastic physics
+  ////RegisterPhysics(new G4EmStandardPhysics(verboseLevel));
+  ////RegisterPhysics(new G4EmExtraPhysics(verboseLevel));
+  ////RegisterPhysics(new G4DecayPhysics(verboseLevel));
+  ////RegisterPhysics(new G4RadioactiveDecayPhysics(verboseLevel));
+  ////RegisterPhysics(new G4HadronElasticPhysicsHP(verboseLevel));
+  //RegisterPhysics(new G4HadronPhysicsINCLXX(G4String(1, static_cast<char>(verboseLevel)), true, true, false));
+  ////RegisterPhysics(new G4StoppingPhysicsWithINCLXX(verboseLevel));
+  ////RegisterPhysics(new G4IonINCLXXPhysics(verboseLevel));
+  //    RegisterPhysics( new G4HadronPhysicsQGSP_BIC(verboseLevel)); //this might more accurate for low energy interractions
+  RegisterPhysics( new G4HadronPhysicsFTFP_BERT_HP(verboseLevel)); //Claude says this is best for 0.1-1GeV
+
   if(useNeutronHP){
-//    RegisterPhysics( new G4HadronPhysicsINCLXX(verboseLevel)); //better for spallation.   This and the lower line conflict
-    RegisterPhysics( new G4HadronPhysicsQGSP_BIC_HP(verboseLevel)); //this is more accurate for low energy interractions
     RegisterPhysics( new G4HadronElasticPhysicsHP(verboseLevel) );
-    // QGSP model with BIC, standard hadron elastic physics, and the
-    // extended neutron XS data set for improved non-HP neutron physics
   }
   else{
-//    RegisterPhysics( new G4HadronPhysicsINCLXX(verboseLevel)); //better for spallation. This and the lower line conflict
-//    RegisterPhysics( new G4HadronPhysicsQGSP_BIC(verboseLevel)); //this is more accurate for low energy interractions
-    RegisterPhysics( new G4HadronPhysicsFTFP_BERT_HP(verboseLevel)); //Claude says this is best for 0.1-1GeV
+    // standard hadron elastic physics, and the
+    // extended neutron XS data set for improved non-HP neutron physics
     RegisterPhysics( new G4HadronElasticPhysics(verboseLevel) );
     RegisterPhysics( new G4NeutronCrossSectionXS(verboseLevel));
   }
+
   // Gamma physics
   RegisterPhysics( new GammaNuclearPhysics("gamma"));
 
