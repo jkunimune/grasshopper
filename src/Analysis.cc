@@ -360,10 +360,13 @@ void Analysis::EndOfEventAction(const G4Event *anEvent)
 				 (LightProducingParticle == 2212 && ProcessNamev.at(i) == "hIoni")) // this is an hadron ionization track from a proton
 			)
 			{
-				if (!Edep_sums.count(channel))
-					Edep_sums[channel] = 0;
-				Edep_sums[channel] += Edepv.at(i);
-				CreatorProcessName += ProcessNamev.at(i) + "/";
+				if (Edepv.at(i) > 0)
+				{
+					if (!Edep_sums.count(channel))
+						Edep_sums[channel] = 0;
+					Edep_sums[channel] += Edepv.at(i);
+					CreatorProcessName += ProcessNamev.at(i) + "/";
+				}
 			}
 		}
 #if defined(G4ANALYSIS_USE_ROOT)
